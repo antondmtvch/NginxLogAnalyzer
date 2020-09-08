@@ -3,4 +3,3 @@ reports/*.html
 .idea
 __pycache__
 *.log
-log/*.log*
