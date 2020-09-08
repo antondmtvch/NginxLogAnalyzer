@@ -11,8 +11,6 @@ from collections import namedtuple
 from datetime import datetime
 from log_analyzer.analyzer import Analyzer
 
-logging.basicConfig(format='[%(asctime)s] %(levelname).1s %(message)s')
-
 REP_TEMPLATE_PATH = os.path.join('log_analyzer', 'template', 'report.html')
 FILE_LINE_PATTERN = re.compile(r'^.+\[.+\]\s\"[A-Z]+?\s(?P<url>/.+?)\sHTTP.+?\".+\s(?P<request_time>\d+\.\d+)$')
 FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(?P<extension>\.gz|))$')
@@ -39,11 +37,11 @@ class Parser:
         self._find_last_file()
 
         if not self.last_file:
-            print(f'В директории {self.log_dir} отсутствует нужный файл с логами.')
+            logging.info(f'В директории {self.log_dir} отсутствует нужный файл с логами.')
             sys.exit(0)
 
         if os.path.exists(self.last_file.report_path):
-            print(f'Отчет {self.last_file.report_path} существует.')
+            logging.info(f'Отчет {self.last_file.report_path} существует.')
             sys.exit(0)
 
         for line in self._read_lines():
@@ -57,7 +55,7 @@ class Parser:
         :return: None
         """
         if not (logs := os.listdir(self.log_dir)):
-            print(f'Директория {self.log_dir} пустая.')
+            logging.info(f'Директория {self.log_dir} пустая.')
             sys.exit(0)
 
         match = None
@@ -116,4 +114,4 @@ class Parser:
             with open(self.last_file.report_path, 'w') as report:
                 template = Template(report_template.read()).safe_substitute(table_json=json.dumps(table_json))
                 report.write(template)
-        print(f'Создан отчет: {self.last_file.report_path}')
+        logging.info(f'Создан отчет: {self.last_file.report_path}')
