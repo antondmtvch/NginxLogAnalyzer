@@ -5,13 +5,15 @@ import gzip
 import json
 import logging
 
+from typing import Union
 from string import Template
 from collections import namedtuple
 from datetime import datetime
-from analyzer import Analyzer
+from log_analyzer.analyzer import Analyzer
 
 logging.basicConfig(format='[%(asctime)s] %(levelname).1s %(message)s')
 
+REP_TEMPLATE_PATH = os.path.join('log_analyzer', 'template', 'report.html')
 FILE_LINE_PATTERN = re.compile(r'^.+\[.+\]\s\"[A-Z]+?\s(?P<url>/.+?)\sHTTP.+?\".+\s(?P<request_time>\d+\.\d+)$')
 FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(?P<extension>\.gz|))$')
 
@@ -64,8 +66,7 @@ class Parser:
         for name in logs:
             if m := re.match(self.name_pattern, name):
                 if (d := datetime.strptime(m.group('date'), '%Y%m%d')) > date:
-                    date = d
-                    match = m
+                    date ,match = d, m
 
         File = namedtuple('File', ['path', 'date', 'extension', 'report_path'])
         report_name = f'report-{date.strftime("%Y.%m.%d")}.html'
@@ -83,7 +84,13 @@ class Parser:
         with reader(self.last_file.path, 'rt', encoding='utf-8') as file:
             yield from file
 
-    def generate_report(self, report_size: int) -> None:
+    def generate_report(self, report_size: Union[str, int]) -> None:
+
+        if not isinstance(report_size, int):
+            if isinstance(report_size, str) and report_size.isdigit():
+                report_size = int(report_size)
+            else:
+                raise TypeError(f'report_size must be digit, not {report_size.__class__.__name__}.')
 
         top = sorted(
             map(
@@ -105,14 +112,8 @@ class Parser:
                     "count_perc": round(self.analyzer.count_perc(url), 3),
                 }
             )
-        with open(r'template/report.html') as report_template:
+        with open(REP_TEMPLATE_PATH) as report_template:
             with open(self.last_file.report_path, 'w') as report:
                 template = Template(report_template.read()).safe_substitute(table_json=json.dumps(table_json))
                 report.write(template)
         print(f'Создан отчет: {self.last_file.report_path}')
-
-
-if __name__ == '__main__':
-    parser = Parser()
-    parser.parse(log_dir='../log', report_dir='../reports')
-    parser.generate_report(report_size=1000)
