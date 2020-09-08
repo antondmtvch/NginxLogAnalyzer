@@ -18,12 +18,18 @@ FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(
 
 class Parser:
     def __init__(self):
+        self.reading_lines_count = 0
+        self.err_threshold = 0.3
+        self.err_count = 0
         self.analyzer = Analyzer()
         self.log_dir = None
         self.last_file = None
         self.report_dir = None
         self.line_pattern = FILE_LINE_PATTERN
         self.name_pattern = FILE_NAME_PATTERN
+
+    def _percent_of_errors(self) -> float:
+        return 100 * self.err_count / self.reading_lines_count
 
     def parse(self, log_dir: str, report_dir: str) -> None:
         """
@@ -48,6 +54,9 @@ class Parser:
             if m := re.match(self.line_pattern, line):
                 url, time = m.groups()
                 self.analyzer.update(url, float(time))
+            else:
+                self.err_count += 1
+            self.reading_lines_count += 1
 
     def _find_last_file(self) -> namedtuple:
         """Поиск последнего по дате файла с логами.
@@ -83,6 +92,11 @@ class Parser:
             yield from file
 
     def generate_report(self, report_size: Union[str, int]) -> None:
+
+        if self._percent_of_errors() >= self.err_threshold:
+            logging.error(f'Превышен порог ошибок. Процент ошибок - {self._percent_of_errors(): .2f}. '
+                          f'Допустимый порог - {self.err_threshold}')
+            sys.exit(1)
 
         if not isinstance(report_size, int):
             if isinstance(report_size, str) and report_size.isdigit():
