@@ -13,7 +13,7 @@ class Analyzer:
 
         :param url:
         :param time:
-        :return: None
+        :return:
         """
         self.url_count.update([url])
         self.url_times[url].append(time)
