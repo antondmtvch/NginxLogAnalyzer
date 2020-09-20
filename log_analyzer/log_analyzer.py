@@ -103,7 +103,7 @@ def generate_report(file: File, report_size: int) -> None:
     table_json = json.dumps(table_json[:int(report_size)])
 
     with open(TEMPLATE_PATH) as tmpl:
-        with open(file.report_path, 'w') as report:
-            template = Template(tmpl.read()).safe_substitute(table_json=table_json)
-            report.write(template)
+        template = Template(tmpl.read()).safe_substitute(table_json=table_json)
+    with open(file.report_path, 'w') as report:
+        report.write(template)
     logging.info(f'Report is created: {file.report_path}')
