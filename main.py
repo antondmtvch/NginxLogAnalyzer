@@ -1,16 +1,15 @@
-import os
 import sys
 import logging
 import argparse
 import configparser
-
+from os import path
 from log_analyzer.log_analyzer import generate_report, find_log_file
 
 
 def argument_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', dest='config', type=str, help='config file path',
-                        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.ini'))
+                        default=path.join(path.dirname(path.abspath(__file__)), 'settings.ini'))
     return parser.parse_args()
 
 
@@ -34,8 +33,8 @@ def main() -> None:
     logging.basicConfig(format='[%(asctime)s] %(levelname).1s %(message)s', level=logging.INFO,
                         datefmt='%Y.%m.%d %H:%M:%S', filename=config.get('LOG_FILE'))
 
-    log_dir = os.path.abspath(config['LOG_DIR'])
-    report_dir = os.path.abspath(config['REPORT_DIR'])
+    log_dir = path.abspath(config['LOG_DIR'])
+    report_dir = path.abspath(config['REPORT_DIR'])
     try:
         if file := find_log_file(log_dir, report_dir):
             generate_report(file=file, report_size=config['REPORT_SIZE'])

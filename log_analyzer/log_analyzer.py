@@ -1,17 +1,17 @@
-import os
 import re
 import gzip
 import json
 import logging
+from os import path, listdir
 from itertools import chain
 from string import Template
 from datetime import datetime
 from statistics import median
-from typing import Union, Iterable
+from typing import Union
 from collections import namedtuple, Counter, defaultdict
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_PATH = os.path.join(BASE_DIR, 'template', 'report.html')
+BASE_DIR = path.dirname(path.abspath(__file__))
+TEMPLATE_PATH = path.join(BASE_DIR, 'template', 'report.html')
 
 FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(?P<ext>\.gz|))$')
 LINE_PATTERN = re.compile(
@@ -23,7 +23,7 @@ File = namedtuple('LogFile', ['path', 'date', 'ext', 'report_path'])
 
 def find_log_file(log_dir: str, report_dir: str) -> Union[File, None]:
     try:
-        if not (files := os.listdir(log_dir)):
+        if not (files := listdir(log_dir)):
             logging.info(f"{log_dir} directory is empty!")
             return None
     except FileNotFoundError as err:
@@ -43,9 +43,6 @@ def find_log_file(log_dir: str, report_dir: str) -> Union[File, None]:
     if not match:
         logging.info(f'the directory {log_dir} does not contain files with logs of the required format!')
         return None
-    report_path = os.path.join(os.path.abspath(report_dir), f'report-{date.strftime("%Y.%m.%d")}.html')
-    log_path = os.path.join(os.path.abspath(log_dir), match.group('name'))
-    return File(path=log_path, date=date, ext=match.group('ext'), report_path=report_path)
 
 
 def parse_lines(file: File) -> tuple:
@@ -60,7 +57,7 @@ def parse_lines(file: File) -> tuple:
 
 
 def generate_report(file: File, report_size: int) -> None:
-    if os.path.exists(file.report_path):
+    if path.exists(file.report_path):
         logging.info(f'Report already exists: {file.report_path}')
         return None
 
