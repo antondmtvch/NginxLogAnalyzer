@@ -50,3 +50,7 @@ class LogAnalyzerTestCase(unittest.TestCase):
         file = find_log_file(self.log_dir, self.rep_dir)
         generate_report(file=file, report_size=100)
         self.assertIn('report-2017.06.20.html', listdir(self.rep_dir))
+
+
+if __name__ == '__main__':
+    unittest.main()
