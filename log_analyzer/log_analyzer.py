@@ -10,8 +10,7 @@ from statistics import median
 from typing import Union
 from collections import namedtuple, Counter, defaultdict
 
-BASE_DIR = path.dirname(path.abspath(__file__))
-TEMPLATE_PATH = path.join(BASE_DIR, 'template', 'report.html')
+TEMPLATE_PATH = path.join(path.dirname(path.abspath(__file__)), 'template', 'report.html')
 
 FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(?P<ext>\.gz|))$')
 LINE_PATTERN = re.compile(
