@@ -41,9 +41,8 @@ def find_log_file(log_dir: str, report_dir: str) -> Union[File, None]:
                 logging.exception(err)
 
     if match:
-        report_path = path.join(report_dir, f'report-{date.strftime("%Y.%m.%d")}.html')
-        log_path = path.join(log_dir, match.group('name'))
-        return File(path=log_path, date=date, ext=match.group('ext'), report_path=report_path)
+        return File(path=path.join(log_dir, match.group('name')), date=date, ext=match.group('ext'),
+                    report_path=path.join(report_dir, f'report-{date.strftime("%Y.%m.%d")}.html'))
     else:
         logging.info(f'the directory {log_dir} does not contain files with logs of the required format!')
         return None
