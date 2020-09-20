@@ -27,5 +27,3 @@ $ python main.py --config [config file path]
 - `time_avg` - средний `$request_time` для данного URL'а
 - `time_max` - максимальный `$request_time` для данного URL'а
 - `time_med` - медиана `$request_time` для данного URL'а
-
-![report_example](https://user-images.githubusercontent.com/33620637/93717230-0add9900-fb7d-11ea-900d-abcfd7f3835d.png)
