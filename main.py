@@ -4,7 +4,7 @@ import logging
 import argparse
 import configparser
 
-from log_analyzer.parser import Parser
+from log_analyzer.log_analyzer import generate_report, find_log_file
 
 
 def argument_parser() -> argparse.Namespace:
@@ -33,15 +33,16 @@ def main() -> None:
     config.update(config_parser())
     logging.basicConfig(format='[%(asctime)s] %(levelname).1s %(message)s', level=logging.INFO,
                         datefmt='%Y.%m.%d %H:%M:%S', filename=config.get('LOG_FILE'))
+
+    log_dir = os.path.abspath(config['LOG_DIR'])
+    report_dir = os.path.abspath(config['REPORT_DIR'])
     try:
-        parser = Parser()
-        parser.parse(log_dir=config['LOG_DIR'], report_dir=config['REPORT_DIR'])
-        parser.generate_report(report_size=config['REPORT_SIZE'])
-    except Exception as e:
-        logging.exception(e)
+        if file := find_log_file(log_dir, report_dir):
+            generate_report(file=file, report_size=config['REPORT_SIZE'])
+    except Exception as err:
+        logging.exception(f'Unexpected error: {err}')
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-
