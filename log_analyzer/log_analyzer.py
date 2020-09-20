@@ -48,7 +48,7 @@ def find_log_file(log_dir: str, report_dir: str) -> Union[File, None]:
     return File(path=log_path, date=date, ext=match.group('ext'), report_path=report_path)
 
 
-def parse_lines(file: File) -> Iterable[tuple]:
+def parse_lines(file: File) -> tuple:
     reader = gzip.open if file.ext == '.gz' else open
     with reader(file.path, 'rt', encoding='utf-8') as f:
         for line in f:
