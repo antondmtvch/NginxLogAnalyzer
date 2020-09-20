@@ -11,7 +11,7 @@ from collections import namedtuple
 from datetime import datetime
 from log_analyzer.analyzer import Analyzer
 
-REP_TEMPLATE_PATH = os.path.join('log_analyzer', 'template', 'report.html')
+REP_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'template', 'report.html')
 FILE_LINE_PATTERN = re.compile(r'^.+\[.+\]\s\"[A-Z]+?\s(?P<url>/.+?)\sHTTP.+?\".+\s(?P<request_time>\d+\.\d+)$')
 FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(?P<extension>\.gz|))$')
 
@@ -19,7 +19,7 @@ FILE_NAME_PATTERN = re.compile(r'^(?P<name>nginx-access-ui\.log-(?P<date>\d{8})(
 class Parser:
     def __init__(self):
         self.reading_lines_count = 0
-        self.err_threshold = 0.3
+        self.err_threshold = 30
         self.err_count = 0
         self.analyzer = Analyzer()
         self.log_dir = None
@@ -32,12 +32,6 @@ class Parser:
         return 100 * self.err_count / self.reading_lines_count
 
     def parse(self, log_dir: str, report_dir: str) -> None:
-        """
-
-        :param log_dir:
-        :param report_dir:
-        :return:
-        """
         self.report_dir = report_dir
         self.log_dir = log_dir
         self._find_last_file()
@@ -59,10 +53,6 @@ class Parser:
             self.reading_lines_count += 1
 
     def _find_last_file(self) -> namedtuple:
-        """Поиск последнего по дате файла с логами.
-
-        :return: None
-        """
         if not (logs := os.listdir(self.log_dir)):
             logging.info(f'Директория {self.log_dir} пустая.')
             sys.exit(0)
@@ -83,10 +73,6 @@ class Parser:
                               extension=match.group('extension'), report_path=report_path) if match else None
 
     def _read_lines(self) -> str:
-        """Чтение строк файла.
-
-        :return: str
-        """
         reader = gzip.open if self.last_file.extension == '.gz' else open
         with reader(self.last_file.path, 'rt', encoding='utf-8') as file:
             yield from file
@@ -98,17 +84,11 @@ class Parser:
                           f'Допустимый порог - {self.err_threshold}')
             sys.exit(1)
 
-        if not isinstance(report_size, int):
-            if isinstance(report_size, str) and report_size.isdigit():
-                report_size = int(report_size)
-            else:
-                raise TypeError(f'report_size must be digit, not {report_size.__class__.__name__}.')
-
         top = sorted(
             map(
                 lambda x: (x[0], sum(x[1])), self.analyzer.url_times.items()
             ), key=lambda x: x[1], reverse=True
-        )[0:report_size]
+        )[0:int(report_size)]
 
         table_json = []
         for url, time in top:
