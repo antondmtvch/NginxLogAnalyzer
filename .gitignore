@@ -1,4 +1,5 @@
 venv
+log
 reports/*.html
 .idea
 __pycache__
