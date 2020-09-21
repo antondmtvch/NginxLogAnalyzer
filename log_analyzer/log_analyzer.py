@@ -7,7 +7,7 @@ from itertools import chain
 from string import Template
 from datetime import datetime
 from statistics import median
-from typing import Union
+from typing import Union, List, Dict
 from collections import namedtuple, Counter, defaultdict
 
 TEMPLATE_PATH = path.join(path.dirname(path.abspath(__file__)), 'template', 'report.html')
@@ -58,11 +58,7 @@ def parse_lines(file: File) -> tuple:
                 yield ()
 
 
-def generate_report(file: File, report_size: int) -> None:
-    if path.exists(file.report_path):
-        logging.info(f'Report already exists: {file.report_path}')
-        return None
-
+def analyze(file: File, err_threshold=10.0) -> tuple:
     request_count = Counter()
     request_times = defaultdict(list)
     error_count = total_lines = 0
@@ -76,11 +72,22 @@ def generate_report(file: File, report_size: int) -> None:
             error_count += 1
         total_lines += 1
 
-    if (error_pct := 100 * error_count / total_lines) >= 30:
-        logging.error(f'Error threshold exceeded. Error count: {error_count}. Error percent: {error_pct :.2f}%')
-        return None
+    if check_percent_of_errors(error_count=error_count, total_lines=total_lines, threshold=err_threshold):
+        return request_count, request_times
+    else:
+        return ()
 
-    table_json = []
+
+def check_percent_of_errors(error_count: int, total_lines: int, threshold: float) -> bool:
+    if (error_pct := 100 * error_count / total_lines) >= threshold:
+        logging.error(f'Error threshold exceeded. Error count: {error_count}. Error percent: {error_pct :.2f}%. '
+                      f'Threshold: {threshold}')
+        return False
+    return True
+
+
+def construct_table_rows(request_count: Counter, request_times:defaultdict) -> List[Dict]:
+    table_rows = []
     time_total = sum(chain(*request_times.values()))
     count_total = sum(request_count.values())
 
@@ -89,7 +96,7 @@ def generate_report(file: File, report_size: int) -> None:
         times = request_times[url]
         time_sum = sum(times)
 
-        table_json.append({'count': count,
+        table_rows.append({'count': count,
                            'url': url,
                            'count_perc': round(100 * count / count_total, 2),
                            'time_perc': round(100 * time_sum / time_total, 2),
@@ -98,11 +105,26 @@ def generate_report(file: File, report_size: int) -> None:
                            'time_max': round(max(times), 2),
                            'time_med': round(median(times), 2)})
 
-    table_json = sorted(table_json, key=lambda x: x['time_sum'], reverse=True)
-    table_json = json.dumps(table_json[:int(report_size)])
+    table_rows = sorted(table_rows, key=lambda x: x['time_sum'], reverse=True)
+    return table_rows
 
-    with open(TEMPLATE_PATH) as tmpl:
+
+def substitute_template(template_path: str, table_json: json) -> str:
+    with open(template_path) as tmpl:
         template = Template(tmpl.read()).safe_substitute(table_json=table_json)
-    with open(file.report_path, 'w') as report:
+    return template
+
+
+def save_report(report_path: str, template: str) -> None:
+    with open(report_path, 'w') as report:
         report.write(template)
-    logging.info(f'Report is created: {file.report_path}')
+    logging.info(f'Report is created: {report_path}')
+
+
+def generate_report(file: File, report_size: int) -> None:
+    if result := analyze(file):
+        count, times = result
+        rows = construct_table_rows(request_count=count, request_times=times)
+        table_json = json.dumps(rows[:report_size])
+        template = substitute_template(template_path=TEMPLATE_PATH, table_json=table_json)
+        save_report(report_path=file.report_path, template=template)
