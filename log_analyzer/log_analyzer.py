@@ -86,7 +86,7 @@ def check_percent_of_errors(error_count: int, total_lines: int, threshold: float
     return True
 
 
-def construct_table_rows(request_count: Counter, request_times:defaultdict) -> List[Dict]:
+def generate_table_rows(request_count: Counter, request_times:defaultdict) -> List[Dict]:
     table_rows = []
     time_total = sum(chain(*request_times.values()))
     count_total = sum(request_count.values())
@@ -124,7 +124,7 @@ def save_report(report_path: str, template: str) -> None:
 def generate_report(file: File, report_size: int) -> None:
     if result := analyze(file):
         count, times = result
-        rows = construct_table_rows(request_count=count, request_times=times)
+        rows = generate_table_rows(request_count=count, request_times=times)
         table_json = json.dumps(rows[:report_size])
         template = substitute_template(template_path=TEMPLATE_PATH, table_json=table_json)
         save_report(report_path=file.report_path, template=template)
