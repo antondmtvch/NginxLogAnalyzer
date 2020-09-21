@@ -37,7 +37,11 @@ def main() -> None:
     report_dir = path.abspath(config['REPORT_DIR'])
     try:
         if file := find_log_file(log_dir, report_dir):
-            generate_report(file=file, report_size=config['REPORT_SIZE'])
+            if path.exists(file.report_path):
+                logging.info(f'Report already exists: {file.report_path}')
+                return None
+            else:
+                generate_report(file=file, report_size=int(config['REPORT_SIZE']))
     except Exception as err:
         logging.exception(f'Unexpected error: {err}')
         sys.exit(1)
